@@ -1,5 +1,0 @@
-game_id,turn,snake_id,snake_name,health,length,alive
-cf9540e9-c5a2-43f1-98cb-9c53334a9cea,0,4a6e7eda-11d4-4c00-a7bf-85017f3c6f3a,Doggo,100,3,1
-cf9540e9-c5a2-43f1-98cb-9c53334a9cea,1,4a6e7eda-11d4-4c00-a7bf-85017f3c6f3a,Doggo,99,3,1
-cf9540e9-c5a2-43f1-98cb-9c53334a9cea,2,4a6e7eda-11d4-4c00-a7bf-85017f3c6f3a,Doggo,98,3,1
-cf9540e9-c5a2-43f1-98cb-9c53334a9cea,4,4a6e7eda-11d4-4c00-a7bf-85017f3c6f3a,Doggo,98,3,0

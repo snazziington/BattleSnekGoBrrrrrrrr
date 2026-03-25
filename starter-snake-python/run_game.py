@@ -11,7 +11,7 @@ CMD = [
     "-W", "11", "-H", "11",
     "-g", "standard",
     "-m", "hz_hazard_pits",
-    "--name", "Doggo", "--url", "http://127.0.0.1:8000",
+    "--name", "Snake1", "--url", "http://127.0.0.1:8000",
     #"--name", "Snake2", "--url", "http://127.0.0.1:8001",
     #"--name", "Snake3", "--url", "http://127.0.0.1:8002",
     #"--name", "Snake4", "--url", "http://127.0.0.1:8003",
