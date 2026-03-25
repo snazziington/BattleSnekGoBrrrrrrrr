@@ -1,0 +1,5 @@
+game_id,winner,placement,snake_id,snake_name,turns_survived,start_length,max_length,final_length,final_health,alive_at_end,survival_score,growth_score,performance_score
+b5d37470-d176-4e19-a4c1-fe4a39a67e3a,,1,9da05244-6257-4e7d-80c3-141614f3e5fc,Snake1,31,3,5,5,78,0,0.9394,0.4,0.8315
+d43d2fcc-f8a4-4eb8-98df-1040e63ec92d,,1,463e2382-04c3-4614-bcc2-4509c6ac82a4,Snake1,4,3,3,3,97,0,0.6667,0.0,0.5333
+6795ef7e-0876-4cef-a32f-99ca0697751a,,1,3f9115f7-b8de-45e2-875e-4e916668fc74,Snake1,22,3,6,6,99,0,0.9167,0.6,0.8533
+389d185c-0ee6-43f0-9586-69d16e568a35,,1,c2777413-19ee-4690-89ff-4912ad4ab0f6,Snake1,12,3,5,5,99,0,0.8571,0.4,0.7657
