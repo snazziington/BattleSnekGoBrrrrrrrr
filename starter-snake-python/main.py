@@ -22,10 +22,10 @@ def info() -> typing.Dict:
 
     return {
         "apiversion": "1",
-        "author": "",  # TODO: Your Battlesnake Username
-        "color": "#888888",  # TODO: Choose color
-        "head": "default",  # TODO: Choose head
-        "tail": "default",  # TODO: Choose tail
+        "author": "Snazziington",  # TODO: Your Battlesnake Username
+        "color": "#8348F0",  # TODO: Choose color
+        "head": "beluga",  # TODO: Choose head
+        "tail": "do-sammy",  # TODO: Choose tail
     }
 
 
@@ -43,7 +43,7 @@ def end(game_state: typing.Dict):
 # Valid moves are "up", "down", "left", or "right"
 # See https://docs.battlesnake.com/api/example-move for available data
 def move(game_state: typing.Dict) -> typing.Dict:
-    """
+
     is_move_safe = {"up": True, "down": True, "left": True, "right": True}
 
     # We've included code to prevent your Battlesnake from moving backwards
@@ -83,15 +83,15 @@ def move(game_state: typing.Dict) -> typing.Dict:
         return {"move": "down"}
 
     # Choose a random move from the safe ones
-    #next_move = "up"
+    next_move = random.choice(safe_moves)
 
     # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
     # food = game_state['board']['food']
-    """
 
-    print(f"MOVE123? {game_state['turn']}: {"up"}", "wah wah")
-    print(f"hewwo", game_state['board']['width'], game_state['board']['height'])
-    return {"move": "up"}
+    print(f"MOVE {game_state['turn']}: {next_move}")
+    print(board_width, board_height)
+    print(my_head["x"], my_head["y"])
+    return {"move": next_move}
 
 
 # Start server when `python main.py` is run
