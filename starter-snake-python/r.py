@@ -10,7 +10,7 @@ CMD = [
     "battlesnake", "play",
     "-W", "11", "-H", "11",
     "-g", "standard",
-    "-m", "hz_hazard_pits",
+    #"-m", "hz_hazard_pits",
     "--name", "Snake1", "--url", "http://127.0.0.1:8000",
     #"--name", "Snake2", "--url", "http://127.0.0.1:8001",
     #"--name", "Snake3", "--url", "http://127.0.0.1:8002",

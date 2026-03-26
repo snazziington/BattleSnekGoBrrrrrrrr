@@ -89,8 +89,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
     # food = game_state['board']['food']
 
     print(f"MOVE {game_state['turn']}: {next_move}")
-    print(board_width, board_height)
-    print(my_head["x"], my_head["y"])
+    #print(board_width, board_height)
+    #print(my_head["x"], my_head["y"])
     return {"move": next_move}
 
 
