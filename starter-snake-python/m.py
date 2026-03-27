@@ -44,8 +44,12 @@ collisionScore = -100
 def move(game_state: typing.Dict) -> typing.Dict:
 
     # Snake Head + Neck
-    myHead = game_state["you"]["body"][0]
-    myNeck = game_state["you"]["body"][1]
+    myHead  = game_state["you"]["body"][0]
+    tailIndex = len(game_state["you"]["body"]) - 1
+    print(tailIndex)
+
+    myTail = game_state["you"]["body"][tailIndex]
+    print(myTail)
 
     # Board dimensions
     boardWidth = game_state['board']['width']
@@ -73,11 +77,15 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
         # Colliding with Self
         for bodyPart in game_state["you"]["body"]:
-            bodyCoords = [bodyPart["x"], bodyPart["y"]]
-            print(bodyCoords, nextMove)
-            if bodyCoords == nextMove:
-                score[n] += collisionScore
-                print("Cannot move ", moves[n][2], ", will collide with body")
+            if bodyPart == myTail and game_state['turn'] > 2:
+                ...
+            else:
+                bodyCoords = [bodyPart["x"], bodyPart["y"]]
+
+                print(bodyCoords, nextMove)
+                if bodyCoords == nextMove:
+                    score[n] += collisionScore
+                    print("Cannot move ", moves[n][2], ", will collide with body")
 
         if nextMove [0] == boardWidth or nextMove [0] == -1 or nextMove [1] == boardHeight or nextMove [1] == -1:
             score[n] += collisionScore
