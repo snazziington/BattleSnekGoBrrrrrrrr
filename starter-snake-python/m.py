@@ -11,8 +11,8 @@
 # For more info see docs.battlesnake.com
 
 import random
+import numpy as np
 import typing
-
 
 # info is called when you create your Battlesnake on play.battlesnake.com
 # and controls your Battlesnake's appearance
@@ -28,16 +28,13 @@ def info() -> typing.Dict:
         "tail": "do-sammy",  # TODO: Choose tail
     }
 
-
 # start is called when your Battlesnake begins a game
 def start(game_state: typing.Dict):
     print("GAME START")
 
-
 # end is called when your Battlesnake finishes a game
 def end(game_state: typing.Dict):
     print("GAME OVER\n")
-
 
 # move is called on every turn and returns your next move
 # Valid moves are "up", "down", "left", or "right"
@@ -87,12 +84,18 @@ def move(game_state: typing.Dict) -> typing.Dict:
             print("Cannot move ", moves[n][2], ", will collide with wall")
 
         print("Score for moving", moves[n][2], "is: ", score[n])
-    
+
     print("All scores: ", score)
-    maxScore = max(score)
-    maxScoreIndex = score.index(maxScore)
-    print("The max scoring direction is ", moves[maxScoreIndex][2], "so we'll move that way!")
-    return {"move": moves[maxScoreIndex][2]}
+    maxScore = max(score) # is 0 [-100, -100, 0, 0]
+    scoreValues = np.array([score[0], score[1], score[2], score[3]])
+    print(scoreValues)
+
+    ii = np.where(scoreValues == maxScore)[0]
+    print(ii)
+    nextMove = random.choice(ii)
+    print(random.choice(ii))
+    print("The max scoring direction is ", moves[nextMove][2], "so we'll move that way!")
+    return {"move": moves[nextMove][2]}
 
         # Colliding with barrier
 
