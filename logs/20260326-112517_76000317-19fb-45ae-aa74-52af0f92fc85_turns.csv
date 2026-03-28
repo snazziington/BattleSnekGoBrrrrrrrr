@@ -1,0 +1,6 @@
+game_id,turn,snake_id,snake_name,health,length,alive
+76000317-19fb-45ae-aa74-52af0f92fc85,0,66d1efce-3cb6-4584-9981-3ec8aaeb99fa,Dawg,100,3,1
+76000317-19fb-45ae-aa74-52af0f92fc85,1,66d1efce-3cb6-4584-9981-3ec8aaeb99fa,Dawg,99,3,1
+76000317-19fb-45ae-aa74-52af0f92fc85,2,66d1efce-3cb6-4584-9981-3ec8aaeb99fa,Dawg,98,3,1
+76000317-19fb-45ae-aa74-52af0f92fc85,3,66d1efce-3cb6-4584-9981-3ec8aaeb99fa,Dawg,97,3,1
+76000317-19fb-45ae-aa74-52af0f92fc85,5,66d1efce-3cb6-4584-9981-3ec8aaeb99fa,Dawg,97,3,0
