@@ -25,11 +25,11 @@ def end(game_state: typing.Dict):
 
 # ================= HELPERS =================
 
-def get_head(state):
+def getHead(state):
     return state["you"]["body"][0]
 
 
-def move_point(point, move):
+def movePoint(point, move):
     if move == "up":
         return {"x": point["x"], "y": point["y"] + 1}
     if move == "down":
@@ -40,7 +40,7 @@ def move_point(point, move):
         return {"x": point["x"] + 1, "y": point["y"]}
 
 
-def occupied_positions(state):
+def occupiedPositions(state):
     occ = set()
     for s in state["board"]["snakes"]:
         for b in s["body"]:
@@ -49,11 +49,11 @@ def occupied_positions(state):
 
 # ================= SAFE MOVES =================
 
-def get_safe_moves(state):
+def getSafeMoves(state):
     moves = ["up", "down", "left", "right"]
     safe = []
 
-    head = get_head(state)
+    head = getHead(state)
     body = state["you"]["body"]
     neck = body[1]
 
@@ -68,12 +68,13 @@ def get_safe_moves(state):
         if move == "up" and neck["y"] > head["y"]:
             continue
 
-        new = move_point(head, move)
+        new = movePoint(head, move)
 
         # walls
         if not (0 <= new["x"] < state["board"]["width"] and
                 0 <= new["y"] < state["board"]["height"]):
             continue
+
 
         # self collision
         if (new["x"], new["y"]) in [(b["x"], b["y"]) for b in body]:
@@ -85,7 +86,7 @@ def get_safe_moves(state):
 
 # ================= FLOOD FILL =================
 
-def flood_fill(start, board, occupied):
+def floodFill(start, board, occupied):
     stack = [(start["x"], start["y"])]
     visited = set()
     count = 0
@@ -108,8 +109,8 @@ def flood_fill(start, board, occupied):
 
 # ================= SIMULATION =================
 
-def apply_move(state, move):
-    new_state = {
+def applyMove(state, move):
+    newState = {
         "you": {
             "body": list(state["you"]["body"]),
             "health": state["you"]["health"] - 1
@@ -117,23 +118,22 @@ def apply_move(state, move):
         "board": state["board"]
     }
 
-    head = get_head(state)
-    new_head = move_point(head, move)
+    head = getHead(state)
+    newHead = movePoint(head, move)
 
-    new_body = [new_head] + new_state["you"]["body"][:-1]
+    newBody = [newHead] + newState["you"]["body"][:-1]
 
     # food
     for food in state["board"]["food"]:
-        if food == new_head:
-            new_body.append(new_body[-1])
-            new_state["you"]["health"] = 100
+        if food == newHead:
+            newBody.append(newBody[-1])
+            newState["you"]["health"] = 100
 
-    new_state["you"]["body"] = new_body
-    return new_state
-
+    newState["you"]["body"] = newBody
+    return newState
 
 def dead(state):
-    head = get_head(state)
+    head = getHead(state)
     body = state["you"]["body"][1:]
 
     if (head["x"], head["y"]) in [(b["x"], b["y"]) for b in body]:
@@ -170,32 +170,32 @@ def select(node):
 
 
 def expand(node):
-    moves = get_safe_moves(node.state)
+    moves = getSafeMoves(node.state)
     for m in moves:
-        child_state = apply_move(node.state, m)
-        child = Node(child_state, node, m)
+        childState = applyMove(node.state, m)
+        child = Node(childState, node, m)
         node.children.append(child)
     return random.choice(node.children) if node.children else node
 
 
 def rollout(state, depth=15):
     for _ in range(depth):
-        moves = get_safe_moves(state)
+        moves = getSafeMoves(state)
         if not moves:
             return -100
 
         # bias with flood fill
-        best_move = None
-        best_score = -1
+        bestMove = None
+        bestScore = -1
 
         for m in moves:
-            ns = apply_move(state, m)
-            space = flood_fill(get_head(ns), ns["board"], occupied_positions(ns))
-            if space > best_score:
-                best_score = space
-                best_move = m
+            ns = applyMove(state, m)
+            space = floodFill(getHead(ns), ns["board"], occupiedPositions(ns))
+            if space > bestScore:
+                bestScore = space
+                bestMove = m
 
-        state = apply_move(state, best_move)
+        state = applyMove(state, bestMove)
 
     return evaluate(state)
 
@@ -212,9 +212,9 @@ def evaluate(state):
     if dead(state):
         return -1000
 
-    head = get_head(state)
+    head = getHead(state)
 
-    space = flood_fill(head, state["board"], occupied_positions(state))
+    space = floodFill(head, state["board"], occupiedPositions(state))
     score = space * 2
 
     if state["you"]["health"] < 40 and state["board"]["food"]:
@@ -226,33 +226,33 @@ def evaluate(state):
 # ================= MAIN MOVE =================
 
 def move(game_state: typing.Dict) -> typing.Dict:
-    safe_moves = get_safe_moves(game_state)
+    safeMoves = getSafeMoves(game_state)
 
-    if not safe_moves:
+    if not safeMoves:
         return {"move": "left"}
 
     # flood fill filter
     filtered = []
-    for m in safe_moves:
-        ns = apply_move(game_state, m)
-        space = flood_fill(get_head(ns), ns["board"], occupied_positions(ns))
+    for m in safeMoves:
+        ns = applyMove(game_state, m)
+        space = floodFill(getHead(ns), ns["board"], occupiedPositions(ns))
         if space > len(game_state["you"]["body"]):
             filtered.append(m)
 
     if filtered:
-        safe_moves = filtered
+        safeMoves = filtered
 
     root = Node(game_state)
 
-    start_time = time.time()
-    while time.time() - start_time < 0.18:
+    startTime = time.time()
+    while time.time() - startTime < 0.18:
         node = select(root)
         node = expand(node)
         result = rollout(node.state)
         backpropagate(node, result)
 
     if not root.children:
-        return {"move": random.choice(safe_moves)}
+        return {"move": random.choice(safeMoves)}
 
     best = max(root.children, key=lambda c: c.visits)
 
