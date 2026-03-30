@@ -12,7 +12,7 @@ def info() -> typing.Dict:
     return {
        "apiversion":"1",
        "author":"Snazziington",  # TODO: Your Battlesnake Username
-       "color":"#6B57E0",  # TODO: Choose color
+       "color":"#E0B057",  # TODO: Choose color
        "head":"beluga",  # TODO: Choose head
        "tail":"do-sammy",  # TODO: Choose tail
     }
@@ -31,11 +31,26 @@ def end(game_state: typing.Dict):
 # Valid moves are"up","down","left", or"right"
 
 collisionScore = -100
+# region Helpers
+def get_head(state):
+    return state["you"]["body"][0]
+
+def move_point(point, move):
+    if move == "up":
+        return {"x": point["x"], "y": point["y"] + 1}
+    if move == "down":
+        return {"x": point["x"], "y": point["y"] - 1}
+    if move == "left":
+        return {"x": point["x"] - 1, "y": point["y"]}
+    if move == "right":
+        return {"x": point["x"] + 1, "y": point["y"]}
+# endregion
 
 def wallCollision(game_state: typing.Dict, nextMove, boardWidth, boardHeight):
     if nextMove['x'] == boardWidth or nextMove['x'] == -1 or nextMove['y'] == boardHeight or nextMove['y'] == -1:
         return True
-    
+
+# Check Snake Occupied Tiles    
 def checkSnakeTiles(game_state: typing.Dict):
     snakeBodyTiles = list()
 
@@ -44,6 +59,51 @@ def checkSnakeTiles(game_state: typing.Dict):
         for xy in snakeBody:
             snakeBodyTiles.append(xy)
     return snakeBodyTiles
+
+# Simulate The Game Move
+def apply_move(state, move):
+    new_state = {
+        "you": {
+            "body": list(state["you"]["body"]),
+            "health": state["you"]["health"] - 1
+        },
+        "board": state["board"]
+    }
+
+    head = get_head(state)
+    new_head = move_point(head, move)
+
+    new_body = [new_head] + new_state["you"]["body"][:-1]
+
+    # food
+    for food in state["board"]["food"]:
+        if food == new_head:
+            new_body.append(new_body[-1])
+            new_state["you"]["health"] = 100
+
+    new_state["you"]["body"] = new_body
+    return new_state
+
+# Flood Fill Algo
+def flood_fill(start, board, occupied): # startingCoords, boardState, occupiedTiles
+    stack = [(start["x"], start["y"])]
+    visited = set()
+    count = 0
+
+    while stack:
+        x, y = stack.pop()
+        if (x, y) in visited:
+            continue
+
+        visited.add((x, y))
+        count += 1
+
+        for nx, ny in [(x+1,y),(x-1,y),(x,y+1),(x,y-1)]:
+            if (0 <= nx < board["width"] and
+                0 <= ny < board["height"] and
+                (nx, ny) not in occupied):
+                stack.append((nx, ny))
+    return count
 
 def move(game_state: typing.Dict) -> typing.Dict:
     print("MOVE:", {game_state['turn']})
@@ -74,6 +134,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
         nextMove = {'x': 0, 'y': 0}
         nextMove['x'] = myHead["x"] + moves[n][0]
         nextMove['y'] = myHead["y"] + moves[n][1]
+
+        print(flood_fill(start, board, occupied))
 
         # New coords of head if doing this move
         print("Compare:", nextMove, myTail)
