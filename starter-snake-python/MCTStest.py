@@ -21,10 +21,14 @@ lowHealthThreshold = 40
 foodDistancePenalty = 3
 # Weight for available space in the evaluation function. Higher means the snake will prioritize moves that give it more room to maneuver.
 spaceWeight = 2
+
+# PENALTIES
 # Penalty for dying. This should be a large negative number to strongly discourage moves that lead to death.
 deadPenalty = -1000
 # Penalty for having no safe moves in the default policy simulation. This helps the algorithm learn to avoid paths that lead to dead ends.
 noMovePenalty = -200 
+# Penalty for going over hazards. This encourages the snake to avoid hazards when possible.
+hazardPenalty = 20
 
 
 # ================= INFO =================
@@ -115,11 +119,6 @@ def getSafeMoves(state):
         # Self collision check
         if (nextPoint["x"], nextPoint["y"]) in [(b["x"], b["y"]) for b in body]:
             continue
-
-        # ADDING hazards check
-        for h in state["board"].get("hazards", []):
-            if (nextPoint["x"], nextPoint["y"]) == (h["x"], h["y"]):
-                continue
         
         # TODO: Other snake collision check
         safe.append(move)
@@ -233,6 +232,7 @@ class Node:
         self.value = 0
 
 # Upper Confidence Bound formula (math I found online).
+
 def ucb1(node):
     # Balances exploration vs exploitation.
     
@@ -350,6 +350,12 @@ def evaluate(state):
         # The FOOD_DISTANCE_PENALTY can be adjusted to make the snake more or less aggressive in seeking food when health is low
         score -= dist * foodDistancePenalty
 
+    # Penalty going over hazards
+    for h in state["board"].get("hazards", []):
+        if (head["x"], head["y"]) == (h["x"], h["y"]):
+            # we subtract a penalty, that gets bigger if we have less health
+            score -= hazardPenalty * (100 - state["you"]["health"])
+
     return score
 
 # ================= MAIN MOVE =================
@@ -368,7 +374,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     if not safe_moves:
         return {"move": "left"}
 
-    # filtered is here to improve performance by reducing the number of moves we consider in the MCTS loop
+    # filtered is here to improve performance by reducing the number of moves we consider in the MCTS loop by filtering out moves that lead to states with very little space, which are likely to be bad moves
     filtered = []
     for m in safe_moves:
         ns = applyMove(game_state, m)
