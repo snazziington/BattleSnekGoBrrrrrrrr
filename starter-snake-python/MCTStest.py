@@ -115,9 +115,16 @@ def getSafeMoves(state):
         # Self collision check
         if (nextPoint["x"], nextPoint["y"]) in [(b["x"], b["y"]) for b in body]:
             continue
+
+        # ADDING hazards check
+        for h in state["board"].get("hazards", []):
+            if (nextPoint["x"], nextPoint["y"]) == (h["x"], h["y"]):
+                continue
         
         # TODO: Other snake collision check
         safe.append(move)
+
+        
 
     return safe
 
@@ -379,7 +386,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
     # MCTS loop
     while time.time() - start_time < MCTSTimeLimit:
-        leaf = tree_policy(root)          # Selection + Expansion
+        leaf = tree_policy(root)                 # Selection + Expansion
         simulation = default_policy(leaf.state)  # Rollout
         backpropagate(leaf, simulation)          # Backpropagation
 
@@ -389,7 +396,11 @@ def move(game_state: typing.Dict) -> typing.Dict:
     print("----All safe moves----")
     print(safe_moves)
 
-    best_child = max(root.children, key=lambda c: c.visits)
+    # After the MCTS loop, we select the child of the root with the most visits, which represents the move that was explored the most and is likely the best move based on our simulations. We return this move as our decision for this turn.
+    # alternatively we could select the child with the highest average value (value/visits) to prioritize moves that had better outcomes in the simulations, but selecting by visits is a common approach that tends to work well in practice.
+    # we do this by using the max function with a key that looks at the visits of each child node, and we return the move associated with that child node as our chosen move for this turn.
+    best_child = max(root.children, key=lambda c: c.value / c.visits if c.visits > 0 else float('-inf'))
+    # best_child = max(root.children, key=lambda c: c.visits)
     print("----Scores of all moves----")
     print(scoreMoves)
 
