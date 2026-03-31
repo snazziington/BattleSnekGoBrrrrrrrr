@@ -6,10 +6,15 @@ import time
 # ================= CONFIGURABLE PARAMETERS =================
 # These values can be tweaked to change behavior easily
 
+# THESE 3 PARAMETERS CONTROL THE MCTS ALGORITHM
 # Rollout depth for the default policy simulation. Higher means more foresight but more computation time.
-rolloutDepth = 15
+rolloutDepth = 20
 # Time limit for MCTS loop in seconds. Battlesnake has a 500ms move time limit, so we want to stay well under that to be safe.
-MCTSTimeLimit = 0.18
+MCTSTimeLimit = 0.2
+# A higher value encourages more exploration, while a lower value favors exploitation of known good moves
+UCB1Exploration = 2
+
+
 # When health drops below this, the snake will prioritize getting food. Adjusting this can make the snake more or less aggressive in seeking food.
 lowHealthThreshold = 40
 # Penalty for being far from food when health is low. Higher means more aggressive food seeking.
@@ -19,9 +24,8 @@ spaceWeight = 2
 # Penalty for dying. This should be a large negative number to strongly discourage moves that lead to death.
 deadPenalty = -1000
 # Penalty for having no safe moves in the default policy simulation. This helps the algorithm learn to avoid paths that lead to dead ends.
-noMovePenalty = -100 
-# A higher value encourages more exploration, while a lower value favors exploitation of known good moves
-UCB1Exploration = 2
+noMovePenalty = -200 
+
 
 # ================= INFO =================
 
@@ -34,8 +38,8 @@ def info() -> typing.Dict:
         "apiversion": "1",
         "author": "MattXWay",
         "color": "#ffc700",
-        "head": "sneaky",
-        "tail": "duck",
+        "head": "pixel-round",
+        "tail": "pixel-round",
     }
 
 
@@ -90,7 +94,9 @@ def getSafeMoves(state):
     # get current thingy
     head = getHead(state)
     body = state["you"]["body"]
-    neck = body[1]
+
+    occupied = occupiedPositions(state)
+    print(f"Occupied positions: {occupied}")
 
     # for each move
     for move in moves:        
@@ -100,6 +106,11 @@ def getSafeMoves(state):
         if not (0 <= nextPoint["x"] < state["board"]["width"] and
                 0 <= nextPoint["y"] < state["board"]["height"]):
             continue
+        
+        # Snake collision check (other snakes)
+        for o in occupied:
+            if (nextPoint["x"], nextPoint["y"]) == o:
+                continue
 
         # Self collision check
         if (nextPoint["x"], nextPoint["y"]) in [(b["x"], b["y"]) for b in body]:
