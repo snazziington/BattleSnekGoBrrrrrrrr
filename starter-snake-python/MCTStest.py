@@ -115,7 +115,8 @@ def getSafeMoves(state):
         # Self collision check
         if (nextPoint["x"], nextPoint["y"]) in [(b["x"], b["y"]) for b in body]:
             continue
-
+        
+        # TODO: Other snake collision check
         safe.append(move)
 
     return safe
@@ -295,6 +296,9 @@ def default_policy(state):
             ns = applyMove(state, move)
             # then use flood fill to evaluate how much space we have
             space = floodFill(getHead(ns), ns["board"], occupiedPositions(ns))
+            scoreMoves[moves.index(move)] = space
+            print("----Applied floodFill score to move----")
+            print(scoreMoves)
             # if this move gives us more space than our current best, we update our best move and score
             if space > best_score:
                 best_score = space
@@ -351,6 +355,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
     3. Pick most visited child
     """
     safe_moves = getSafeMoves(game_state)
+    global scoreMoves
+    scoreMoves = [0, 0, 0, 0]
     # If there are no safe moves, we have to pick something, so we just return left (could be any move since we're doomed at this point)
     if not safe_moves:
         return {"move": "left"}
@@ -380,8 +386,15 @@ def move(game_state: typing.Dict) -> typing.Dict:
     if not root.children:
         return {"move": random.choice(safe_moves)}
 
-    best_child = max(root.children, key=lambda c: c.visits)
+    print("----All safe moves----")
+    print(safe_moves)
 
+    best_child = max(root.children, key=lambda c: c.visits)
+    print("----Scores of all moves----")
+    print(scoreMoves)
+
+    print("----Next move----")
+    print("move", best_child.move)
     return {"move": best_child.move}
 
 # ================= SERVER =================
