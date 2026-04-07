@@ -39,7 +39,8 @@ floodFillWeight = 3 # this is the number the floodFill score is multiplied by fo
 foodDistancePenalty = 1
 hungryBounds = 40
 
-tailFollowWeight = 0.95 # demerit when chasing own tail. otherwise it does it repeatedly and is easily trapped
+# DIFF: below = 1
+tailFollowWeight = 1 # demerit when chasing own tail. otherwise it does it repeatedly and is easily trapped
 hazardWeight = 0.1 # multiplies the death score by this (adds a demerit to moving through hazards)
 chanceCollisionWeight = 0.5
 tailSideFloodFillWeight = 5 # multiplies score of floodFill by this
@@ -212,14 +213,13 @@ def hazardLocations(state):
         hazardSet.append(f)
     return hazardSet
 
-def preferCenterOfMap(point, state):
+def preferCentreofMap(point, board):
     # We prefer our snake being nearer to the middle.
     # Therefore, we will give a bonus to a move's score if it is near the centre of the board
-    centreBoard = {"x": state["board"]["width"] / 2, "y": state["board"]["height"] / 2}
-    centreBoard["x"] = state["board"]["width"] / 2
+    centreBoard = {"x": board["width"] / 2, "y": board["height"] / 2}
+    centreBoard["x"] = board["width"] / 2
 
     centreDis = abs(point["x"] - centreBoard["x"]) + abs(point["y"] - centreBoard["y"])
-    print("centreDis: ", centreDis)
     return centreDis    
 
 def move(game_state: typing.Dict) -> typing.Dict:
@@ -277,8 +277,10 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
         # occupiedTiles 
         occupiedTiles = occupiedPositions(game_state, hazardDamage)
+        print("Hazard Locations:", hazardLocations(game_state))
         print("Hazard Damage", hazardDamage)
         print("Next move:", nextMove)
+        #print("Potential Collisions:", potentialCollisions(game_state))
 
         # Avoid Wall/Snake Collisions (and Hazard collisions if it would kill)
         if wallCollision(nextMove, boardWidth, boardHeight):
@@ -344,8 +346,6 @@ def move(game_state: typing.Dict) -> typing.Dict:
                     score[m] += deathScore
                     print("Cannot move", moves[m][2], ", will collide with a body")
                     print("Score changed by:", deathScore, "New score: ", score[m])
-
-            preferCenterOfMap(nextMove, game_state)
         print("Score for moving", moves[m][2], "is:", score[m])
     
     print("All scores:", score)
