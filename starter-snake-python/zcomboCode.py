@@ -24,6 +24,9 @@ def start(game_state: typing.Dict):
 # end is called when your Battlesnake finishes a game
 def end(game_state: typing.Dict):
     print("GAME OVER\n")
+    snakeLength = game_state["you"]["length"]
+    turnsSurvived = game_state['turn']
+    print("Final score:", snakeLength  * 0.2 + turnsSurvived * 0.8)
 
 # endregion
 
@@ -37,13 +40,26 @@ hazardHealthBarrier = 10 # The min. amount of health our snake wants
 
 floodFillWeight = 3 # this is the number the floodFill score is multiplied by for scoring
 foodDistancePenalty = 1
-hungryBounds = 40
+hungryBounds = 40 # health at which snake searches for food
+hazardAvoidBounds = 40 # snake will avoid hazards like plague if hazard damage is above this number
 
-tailFollowWeight = 0.95 # demerit when chasing own tail. otherwise it does it repeatedly and is easily trapped
-hazardWeight = 0.1 # multiplies the death score by this (adds a demerit to moving through hazards)
-chanceCollisionWeight = 0.5
-tailSideFloodFillWeight = 5 # multiplies score of floodFill by this
+centreScoreWeight = 0.99 # this number represents what the score weight is for the tiles in the
+                        # corners. E.g., 0.8 means that the tiles are each multiplied by a float between
+                        # between 0.8 and 1 based on their distance from the centre of the board.
+                        # Must be float between 0 and 1
+centreScoreBalancer = 1 - centreScoreWeight
+
+tailFollowWeight = 0.99 # demerit when chasing own tail. otherwise it does it repeatedly and is easily trapped
+tailSideFloodFillWeight = 6 # multiplies score of floodFill by this
                             # number if the tail is on that side
+
+hazardWeight = 0.975 # multiplies the score by this if passing through a hazard
+
+chanceCollisionWeight = 0.5
+
+# TODO: Implement below parameters (optional)
+snakeDisWeight = 0.9
+snakeDisScoreBalancer = snakeDisWeight - 1
 
 nonLethalHazardWeight = .25 # the score for moving into a hazardous space is equal
                             # to the deathScore multiplied by this number.
@@ -139,7 +155,7 @@ def movePoint(point, move):
 def simulateMove(state, move, myHead):
 
     newState = state
-    newState["you"]["health"] -= 1
+    newState["you"]["health"] = myHealth - 1
 
     newHead = movePoint(myHead, move) # new head position = old head position moved
                                     # to the direction we're moving
@@ -149,14 +165,13 @@ def simulateMove(state, move, myHead):
     # need to print simulate game state to ensure it is correctly applying the new head and such stuff
     # food
     ateFood = False
+        # If no food was eaten, body shrinks by 1. If food was eaten, body will remain lengthened
+
     for food in state["board"]["food"]:
         if food == newHead:
             newState["you"]["health"] = 100
             ateFood = True
-        elif newState["you"]["health"] == 100:
-            ateFood = True
-
-    # If no food was eaten, body shrinks by 1. If food was eaten, body will remain lengthened
+        
     if ateFood == False:
         newBody.pop()
     return newState
@@ -171,12 +186,13 @@ def occupiedPositions(state, hazardDamage):
             bodyCoords["y"] = b["y"]
             occ.append(bodyCoords)
         
-    # If hazards would kill us and there is no food on the hazard, add them to the occupied tiles list
-    if hazardKillCheck(state, hazardDamage):
+    # If hazards would kill us or hazard Damage is above 40, and there is no food on
+    # the hazard, add them to the occupied tiles list
+    if hazardKillCheck(state, hazardDamage) or hazardDamage > hazardAvoidBounds:
         for hazard in hazardLocations(state):
             if hazard not in foodLocations(state):
                 occ.append(hazard)
-    
+
     for x in range (-1, state["board"]["width"]):
         occ.append({"x": x, "y": -1})
         occ.append({"x": x, "y": state["board"]["height"]})
@@ -206,6 +222,7 @@ def potentialCollisions(state, myHead):
             pot.remove(coords)
     return pot
 
+
 def hazardLocations(state):
     hazardSet = list()
     for f in state["board"]["hazards"]:
@@ -217,10 +234,18 @@ def preferCenterOfMap(point, state):
     # Therefore, we will give a bonus to a move's score if it is near the centre of the board
     centreBoard = {"x": state["board"]["width"] / 2, "y": state["board"]["height"] / 2}
     centreBoard["x"] = state["board"]["width"] / 2
-
+    centreMaxDis = (state["board"]["width"] + state["board"]["height"]) / 2
+    
     centreDis = abs(point["x"] - centreBoard["x"]) + abs(point["y"] - centreBoard["y"])
     print("centreDis: ", centreDis)
-    return centreDis    
+
+    # ranges from 10 - 1 so like. it ranges from the average of the board's width and height
+    centreScore = centreBoard["x"] - abs(point["x"] - centreBoard["x"])
+
+    # centreDis ranges from 1 to 11.
+    centreScore = centreDis / centreMaxDis
+    centreScore = (centreScore * -1 + 1) * centreScoreBalancer + centreScoreWeight
+    return centreScore
 
 def move(game_state: typing.Dict) -> typing.Dict:
     print("=============================")
@@ -231,6 +256,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
     # Snake Head + Neck
     myHead = game_state["you"]["body"][0]
     myTail = game_state["you"]["body"][len(game_state["you"]["body"]) - 1]
+    global myHealth
+    myHealth = game_state["you"]["health"]
 
     # Board dimensions
     boardWidth = game_state['board']['width']
@@ -238,23 +265,26 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
     # region Calc Hazard Damage
     hazardRound = game_state["turn"] % 175
+    # R 0 - 24
     if hazardRound < 25:
         hazardDamage = 0
     
+    # R 25 - 49
     elif hazardRound < 50:
         hazardDamage = 14
     
+    # R 50 - 74
     elif hazardRound < 75:
         hazardDamage = 28
     
+    # R 75 - 99
     elif hazardRound < 100:
         hazardDamage = 42
     
-    elif hazardRound < 150:
+    # R 100 - 175
+    else:
         hazardDamage = 56
 
-    else:
-        hazardDamage = 0
     print("Hazardddddd Damage:", hazardDamage)
     # endregion
     
@@ -308,13 +338,16 @@ def move(game_state: typing.Dict) -> typing.Dict:
             foodScore = 0
             totalFoodDist = 0
             print("Heeeeealth", simGameState["you"]["health"])
+
             for food in foodLocations(game_state):
                 foodDist = min(abs(nextMove["x"]-food["x"]) + abs(nextMove["y"]-f["y"]) for f in simGameState["board"]["food"])
                 if game_state["you"]["health"] < hungryBounds:
                     foodScore -= foodDist * foodDistancePenalty
                     totalFoodDist -= foodDist
+                    if game_state["you"]["health"] < 5:
+                        totalFoodDist *= 10 
             score[m] += foodScore
-            print("Hungry. TotalFoodDist:", totalFoodDist)
+            print("TotalFoodDist:", totalFoodDist)
             print("Score changed by:", foodScore, "New score: ", score[m])
             
             
@@ -335,7 +368,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
             
             if nextMove in checkSnakeTiles(game_state):
                 # Check if chasing own tail + did not just eat food
-                if nextMove == myTail and game_state["you"]["health"] != 100 and game_state['turn'] > 2:
+                if nextMove == myTail and game_state["you"]["health"] < 97 and game_state['turn'] > 2:
                     print("Chasing own tail", game_state["you"]["health"])
                     score[m] *= tailFollowWeight
                     print("Score multiplied by", tailFollowWeight, "New score:", score[m])
@@ -345,7 +378,9 @@ def move(game_state: typing.Dict) -> typing.Dict:
                     print("Cannot move", moves[m][2], ", will collide with a body")
                     print("Score changed by:", deathScore, "New score: ", score[m])
 
-            preferCenterOfMap(nextMove, game_state)
+        score[m] *= round(preferCenterOfMap(nextMove, game_state), 2)
+        print("Score multiplied by", round(preferCenterOfMap(nextMove, game_state), 2), "New score:", score[m])
+
         print("Score for moving", moves[m][2], "is:", score[m])
     
     print("All scores:", score)
