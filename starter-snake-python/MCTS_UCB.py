@@ -122,9 +122,6 @@ def getSafeMoves(state):
         
         # TODO: Other snake collision check
         safe.append(move)
-
-        
-
     return safe
 
 # ================= FLOOD FILL =================

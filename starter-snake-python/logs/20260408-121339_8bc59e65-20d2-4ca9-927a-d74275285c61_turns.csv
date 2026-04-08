@@ -1,0 +1,5 @@
+game_id,turn,snake_id,snake_name,health,length,alive
+8bc59e65-20d2-4ca9-927a-d74275285c61,0,e086e8ae-ca8f-47a8-8a53-7eb638a873ef,noUCB,100,3,1
+8bc59e65-20d2-4ca9-927a-d74275285c61,1,e086e8ae-ca8f-47a8-8a53-7eb638a873ef,noUCB,99,3,1
+8bc59e65-20d2-4ca9-927a-d74275285c61,2,e086e8ae-ca8f-47a8-8a53-7eb638a873ef,noUCB,98,3,1
+8bc59e65-20d2-4ca9-927a-d74275285c61,4,e086e8ae-ca8f-47a8-8a53-7eb638a873ef,noUCB,98,3,0

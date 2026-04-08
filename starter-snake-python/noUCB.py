@@ -1,4 +1,5 @@
 import random
+import numpy as np
 import typing
 import math
 import time
@@ -8,11 +9,13 @@ import time
 
 # THESE 3 PARAMETERS CONTROL THE MCTS ALGORITHM
 # Rollout depth for the default policy simulation. Higher means more foresight but more computation time.
-rolloutDepth = 20
+rolloutDepth = 1
 # Time limit for MCTS loop in seconds. Battlesnake has a 500ms move time limit, so we want to stay well under that to be safe.
 MCTSTimeLimit = 0.2
 
-
+# SCORES
+tailSideFloodFillWeight = 6
+floodFillWeight = 3 # this is the number the floodFill score is multiplied by for scoring
 
 # When health drops below this, the snake will prioritize getting food. Adjusting this can make the snake more or less aggressive in seeking food.
 lowHealthThreshold = 40
@@ -23,12 +26,17 @@ spaceWeight = 2
 
 # PENALTIES
 # Penalty for dying. This should be a large negative number to strongly discourage moves that lead to death.
-deadPenalty = -1000
+deathScore = -10000
+# The min. amount of health our snake wants to have after passing through a hazard
+hazardHealthBarrier = 10
+# Snake will avoid hazards like plague if hazard damage is above this number
+hazardAvoidBounds = 40 
 # Penalty for having no safe moves in the default policy simulation. This helps the algorithm learn to avoid paths that lead to dead ends.
 noMovePenalty = -200 
 # Penalty for going over hazards. This encourages the snake to avoid hazards when possible.
-hazardPenalty = 20
+hazardPenalty = 100
 
+moves = [[0, 1, "up"], [0, -1, "down"], [-1, 0, "left"], [1, 0, "right"]]
 
 # ================= INFO =================
 
@@ -61,6 +69,9 @@ def end(game_state: typing.Dict):
 def getHead(state):
     return state["you"]["body"][0]
 
+def getTail(state):
+    return state["you"]["body"][len(state["you"]["body"]) - 1]
+
 # returns a new point after applying a theoretical move direction.
 def movePoint(point, move):
     # directions are a list of coordinates based on how the snake moves
@@ -74,14 +85,55 @@ def movePoint(point, move):
     dx, dy = directions[move]
     return {"x": point["x"] + dx, "y": point["y"] + dy}
 
+def hazardLocations(state):
+    hazardSet = list()
+    for f in state["board"]["hazards"]:
+        hazardSet.append(f)
+    return hazardSet
+
+def foodLocations(state):
+    foodSet = list()
+    for f in state["board"]["food"]:
+        foodSet.append(f)
+    return foodSet
+
+def hazardKillCheck(state, hazardDamage):
+    if hazardDamage > state["you"]["health"] - hazardHealthBarrier:
+        return True
+    else:
+        return False
+
+def getHazardDamage(state):
+    # region Calc Hazard Damage
+    hazardDamage = int(len(state["board"]["hazards"]) * 2 / 3)
+    return hazardDamage
+
 # returns a set of all occupied coordinates by all snakes, used for collision and flood fill
-def occupiedPositions(state):
-    # set here because it doesn't need to be an ordered list
-    occupied = set()
+def occupiedPositions(state, hazardDamage):
+    occ = list()
+    # Adds current body tiles of all snakes to the occ array
     for s in state["board"]["snakes"]:
         for b in s["body"]:
-            occupied.add((b["x"], b["y"]))
-    return occupied
+            bodyCoords = {'x': 0, 'y': 0}
+            bodyCoords["x"] = b["x"]
+            bodyCoords["y"] = b["y"]
+            occ.append(bodyCoords)
+        
+    # If hazards would kill us or hazard Damage is above 40, and there is no food on
+    # the hazard, add them to the occupied tiles list
+    if hazardKillCheck(state, hazardDamage) or hazardDamage > hazardAvoidBounds:
+        for hazard in hazardLocations(state):
+            if hazard not in foodLocations(state):
+                occ.append(hazard)
+
+    for x in range (-1, state["board"]["width"]):
+        occ.append({"x": x, "y": -1})
+        occ.append({"x": x, "y": state["board"]["height"]})
+
+    for y in range (-1, state["board"]["height"]):
+        occ.append({"x": -1, "y": y})
+        occ.append({"x": state["board"]["width"], "y": y})        
+    return occ
 
 # ================= SAFE MOVES =================
 
@@ -98,8 +150,7 @@ def getSafeMoves(state):
     head = getHead(state)
     body = state["you"]["body"]
 
-    occupied = occupiedPositions(state)
-    print(f"Occupied positions: {occupied}")
+    occupied = occupiedPositions(state, getHazardDamage(state))
 
     # for each move
     for move in moves:        
@@ -129,12 +180,13 @@ def getSafeMoves(state):
 # ================= FLOOD FILL =================
 
 # This is used as a heuristic to evaluate how much room the snake has to survive.
-def floodFill(start, board, occupied):
-    # the way this works is by starting at the head and then exploring all 4 directions, then from those new points it explores all 4 directions again, and so on until there are no more valid points to explore. 
-    # The count of all the valid points is returned as a measure of how much free space there is.
+def floodFill(start, board, occupied, myTail): # floodEvalPosition, boardState, occupiedTiles
+
     stack = [(start["x"], start["y"])]
     visited = set()
     count = 0
+    floodArray = list()
+    barriersFound = list()
 
     # while there are still points to explore
     while stack:
@@ -151,12 +203,30 @@ def floodFill(start, board, occupied):
         count += 1
 
         # Explore neighbors
-        for nx, ny in [(x+1,y),(x-1,y),(x,y+1),(x,y-1)]:
-            if (0 <= nx < board["width"] and
-                0 <= ny < board["height"] and
-                (nx, ny) not in occupied):
+        for nx, ny in [(x + 1, y),(x - 1, y),(x, y + 1),(x, y - 1)]:
+            floodingCoords = {'x': nx, 'y': ny}
+            barriersFound.append(floodingCoords)
+
+            if (0 <= nx < board["width"] and 0 <= ny < board["height"] and floodingCoords not in occupied):
                 stack.append((nx, ny))
 
+                if (nx, ny) not in floodArray:
+                        floodArray.append((nx, ny))
+
+                if floodingCoords in barriersFound:
+                    barriersFound.pop(barriersFound.index(floodingCoords))
+
+    #print("Flood Fill Arrayyyy:", floodArray)
+    #print("barriersFound:", barriersFound)
+    # The snake favours moving to the enclosed area that contains its tail, because it can follow it.
+
+    if myTail in barriersFound:
+        count *= tailSideFloodFillWeight
+        print("Multiplying flood fill value bcs tail is on this side")
+    
+    elif myTail == start:
+        count *= tailSideFloodFillWeight
+        print("Multiplying flood fill value bcs next move is tail")
     return count
 
 # ================= SIMULATION =================
@@ -169,14 +239,8 @@ def applyMove(state, move):
     - Eating food
     - Decreasing health
     """
-
-    new_state = {
-        "you": {
-            "body": list(state["you"]["body"]),
-            "health": state["you"]["health"] - 1
-        },
-        "board": state["board"]
-    }
+    new_state = state
+    new_state["you"]["health"] -= 1
 
     head = getHead(state)
     new_head = movePoint(head, move)
@@ -193,7 +257,6 @@ def applyMove(state, move):
     new_state["you"]["body"] = new_body
     return new_state
 
-
 def isDead(state):
     """
     Checks if the snake is dead due to:
@@ -206,10 +269,12 @@ def isDead(state):
     if (head["x"], head["y"]) in [(b["x"], b["y"]) for b in body]:
         return True
 
-    if not (0 <= head["x"] < state["board"]["width"] and
+    elif not (0 <= head["x"] < state["board"]["width"] and
             0 <= head["y"] < state["board"]["height"]):
         return True
 
+    elif head in occupiedPositions(state, getHazardDamage(state)):
+        return True
     return False
 
 # ================= MCTS IMPLEMENTATION =================
@@ -289,13 +354,15 @@ def default_policy(state):
             # apply the move to get the new state
             ns = applyMove(state, move)
             # then use flood fill to evaluate how much space we have
-            space = floodFill(getHead(ns), ns["board"], occupiedPositions(ns))
-            scoreMoves[moves.index(move)] = space
-            print("----Applied floodFill score to move----")
+            floodFillValue = floodFill(getHead(ns), ns["board"], occupiedPositions(ns, getHazardDamage(ns)), getTail(ns))
+            floodFillScore = floodFillWeight * floodFillValue
+            scoreMoves[moves.index(move)] += floodFillScore
+            print("floodFillScore:", floodFillScore)
+            print("Score changed by:", floodFillScore, "New score: ", scoreMoves[moves.index(move)])
             print(scoreMoves)
             # if this move gives us more space than our current best, we update our best move and score
-            if space > best_score:
-                best_score = space
+            if floodFillValue > best_score:
+                best_score = floodFillValue
                 best_move = move
         # after evaluating, apply best move
         state = applyMove(state, best_move)
@@ -321,28 +388,56 @@ def evaluate(state):
     - Available space
     - Distance to food when low health
     """
+
+    # region Calc Hazard Damage
+    hazardRound = state["turn"] % 175
+    # R 0 - 24
+    if hazardRound < 25:
+        hazardDamage = 0
+    
+    # R 25 - 49
+    elif hazardRound < 50:
+        hazardDamage = 14
+    
+    # R 50 - 74
+    elif hazardRound < 75:
+        hazardDamage = 28
+    
+    # R 75 - 99
+    elif hazardRound < 100:
+        hazardDamage = 42
+    
+    # R 100 - 175
+    else:
+        hazardDamage = 56
+
+    print("Hazardddddd Damage:", hazardDamage)
+    # endregion
+
     # if the snake is dead, we return a large negative score to indicate this is a bad
     if isDead(state):
-        return deadPenalty
+        print("Reducing score by", deathScore)
+        score = deathScore
 
-    head = getHead(state)
-    # we use flood fill again to evaluate how much space we have, and we multiply it by a weight to balance it against other factors
-    space = floodFill(head, state["board"], occupiedPositions(state))
-    score = space * spaceWeight
+    else:
+        head = getHead(state)
+        # we use flood fill again to evaluate how much space we have, and we multiply it by a weight to balance it against other factors
+        space = floodFill(head, state["board"], occupiedPositions(state, getHazardDamage(state)), getTail(state))
+        score = space * spaceWeight
 
-    # Food seeking when low health
-    if state["you"]["health"] < lowHealthThreshold and state["board"]["food"]:
-        dist = min(abs(head["x"]-f["x"]) + abs(head["y"]-f["y"]) for f in state["board"]["food"])
-        # we subtract a penalty based on the distance to food, so that when health is low, we prioritize moves that get us closer to food. 
-        # The FOOD_DISTANCE_PENALTY can be adjusted to make the snake more or less aggressive in seeking food when health is low
-        score -= dist * foodDistancePenalty
+        # Food seeking when low health
+        if state["you"]["health"] < lowHealthThreshold and state["board"]["food"]:
+            dist = min(abs(head["x"]-f["x"]) + abs(head["y"]-f["y"]) for f in state["board"]["food"])
+            # we subtract a penalty based on the distance to food, so that when health is low, we prioritize moves that get us closer to food. 
+            # The FOOD_DISTANCE_PENALTY can be adjusted to make the snake more or less aggressive in seeking food when health is low
+            score -= dist * foodDistancePenalty
 
-    # Penalty going over hazards
-    for h in state["board"].get("hazards", []):
-        if (head["x"], head["y"]) == (h["x"], h["y"]):
-            # we subtract a penalty, that gets bigger if we have less health
-            score -= hazardPenalty * (100 - state["you"]["health"])
-
+        # Penalty going over hazards
+        for h in state["board"].get("hazards", []):
+            if (head["x"], head["y"]) == (h["x"], h["y"]):
+                # we subtract a penalty, that gets bigger if we have less health
+                score -= hazardPenalty * (100 - state["you"]["health"])
+                print("Lets avoid hazard. Subtract", hazardPenalty * (100 - state["you"]["health"]), "from score. Score is now:", score)
     return score
 
 # ================= MAIN MOVE =================
@@ -355,6 +450,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     3. Pick most visited child
     """
     safe_moves = getSafeMoves(game_state)
+    
     global scoreMoves
     scoreMoves = [0, 0, 0, 0]
     # If there are no safe moves, we have to pick something, so we just return left (could be any move since we're doomed at this point)
@@ -365,7 +461,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     filtered = []
     for m in safe_moves:
         ns = applyMove(game_state, m)
-        space = floodFill(getHead(ns), ns["board"], occupiedPositions(ns))
+        space = floodFill(getHead(ns), ns["board"], occupiedPositions(ns, getHazardDamage(game_state)), getTail(ns))
 
         if space > len(game_state["you"]["body"]):
             filtered.append(m)
@@ -392,14 +488,34 @@ def move(game_state: typing.Dict) -> typing.Dict:
     # After the MCTS loop, we select the child of the root with the most visits, which represents the move that was explored the most and is likely the best move based on our simulations. We return this move as our decision for this turn.
     # alternatively we could select the child with the highest average value (value/visits) to prioritize moves that had better outcomes in the simulations, but selecting by visits is a common approach that tends to work well in practice.
     # we do this by using the max function with a key that looks at the visits of each child node, and we return the move associated with that child node as our chosen move for this turn.
-    best_child = max(root.children, key=lambda c: c.value)
+    
+    best_child = max(root.children, key=lambda c: c.value / c.visits if c.visits > 0 else float('-inf'))
+    
     # best_child = max(root.children, key=lambda c: c.visits)
     print("----Scores of all moves----")
     print(scoreMoves)
 
+    best_move = None
+    best_score = -1
+    print(moves)
+    for move in moves:
+        if move[2] in safe_moves:
+            if scoreMoves[moves.index(move)] > best_score:
+                best_move = move[2]
+                best_score = scoreMoves[moves.index(move)]
+
+    """
+    maxScore = max(scoreMoves) # Maximum score found in the score array
+    scoreValues = np.array([scoreMoves[0], scoreMoves[1], scoreMoves[2], scoreMoves[3]]) # We use numpy here so we can use ".where"
+    bestMoves = np.where(scoreValues == maxScore)[0]
+    print("The best possible moves are:", bestMoves)
+    nextMove = random.choice(bestMoves)
+    print("The next move is", moves[nextMove][2])
+    """
+
     print("----Next move----")
-    print("move", best_child.move)
-    return {"move": best_child.move}
+    print(best_move)
+    return {"move": best_move}
 
 # ================= SERVER =================
 

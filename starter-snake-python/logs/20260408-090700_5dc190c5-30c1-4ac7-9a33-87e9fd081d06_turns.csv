@@ -1,0 +1,12 @@
+game_id,turn,snake_id,snake_name,health,length,alive
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,0,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,100,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,1,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,99,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,2,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,98,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,3,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,97,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,4,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,96,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,5,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,95,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,6,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,94,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,7,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,93,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,8,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,92,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,9,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,91,3,1
+5dc190c5-30c1-4ac7-9a33-87e9fd081d06,11,ecc8d13f-e325-485e-af20-cebbb6df7022,Snake1,91,3,0
