@@ -8,19 +8,19 @@ import time
 
 # THESE 3 PARAMETERS CONTROL THE MCTS ALGORITHM
 # Rollout depth for the default policy simulation. Higher means more foresight but more computation time.
-rolloutDepth = 20
+rolloutDepth = 50
 # Time limit for MCTS loop in seconds. Battlesnake has a 500ms move time limit, so we want to stay well under that to be safe.
 MCTSTimeLimit = 0.5
 # A higher value encourages more exploration, while a lower value favors exploitation of known good moves
-UCB1Exploration = 2
+UCB1Exploration = 3
 
 
 # When health drops below this, the snake will prioritize getting food. Adjusting this can make the snake more or less aggressive in seeking food.
 lowHealthThreshold = 60
 # Penalty for being far from food when health is low. Higher means more aggressive food seeking.
-foodDistancePenalty = 3
+foodDistancePenalty = 10
 # Weight for available space in the evaluation function. Higher means the snake will prioritize moves that give it more room to maneuver.
-spaceWeight = 2
+spaceWeight = 30
 
 # PENALTIES
 # Penalty for dying. This should be a large negative number to strongly discourage moves that lead to death.
