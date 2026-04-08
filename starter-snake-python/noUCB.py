@@ -10,12 +10,12 @@ import time
 # Rollout depth for the default policy simulation. Higher means more foresight but more computation time.
 rolloutDepth = 20
 # Time limit for MCTS loop in seconds. Battlesnake has a 500ms move time limit, so we want to stay well under that to be safe.
-MCTSTimeLimit = 0.2
+MCTSTimeLimit = 0.5
 
 
 
 # When health drops below this, the snake will prioritize getting food. Adjusting this can make the snake more or less aggressive in seeking food.
-lowHealthThreshold = 40
+lowHealthThreshold = 60
 # Penalty for being far from food when health is low. Higher means more aggressive food seeking.
 foodDistancePenalty = 3
 # Weight for available space in the evaluation function. Higher means the snake will prioritize moves that give it more room to maneuver.
@@ -27,7 +27,7 @@ deadPenalty = -1000
 # Penalty for having no safe moves in the default policy simulation. This helps the algorithm learn to avoid paths that lead to dead ends.
 noMovePenalty = -200 
 # Penalty for going over hazards. This encourages the snake to avoid hazards when possible.
-hazardPenalty = 20
+hazardPenalty = 200
 
 
 # ================= INFO =================
@@ -39,10 +39,10 @@ def info() -> typing.Dict:
     
     return {
         "apiversion": "1",
-        "author": "MattXWay",
-        "color": "#ffc700",
-        "head": "pixel-round",
-        "tail": "pixel-round",
+        "author": "noUCB",
+        "color": "#ff0000",
+        "head": "gamer",
+        "tail": "pixel",
     }
 
 
@@ -52,8 +52,10 @@ def start(game_state: typing.Dict):
 
 
 def end(game_state: typing.Dict):
-    # Called at the end of a game
     print("GAME OVER\n")
+    snakeLength = game_state["you"]["length"]
+    turnsSurvived = game_state['turn']
+    print("Final score:", snakeLength  * 0.2 + turnsSurvived * 0.8)
 
 # ================= HELPER FUNCTIONS =================
 

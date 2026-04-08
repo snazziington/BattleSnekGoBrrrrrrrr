@@ -6,10 +6,10 @@ import time
 # ================= CONFIG =================
 
 rolloutDepth = 20
-MCTSTimeLimit = 0.2
+MCTSTimeLimit = 0.5
 raveExploration = 1000
 
-lowHealthThreshold = 40
+lowHealthThreshold = 60
 foodDistancePenalty = 3
 spaceWeight = 2
 
@@ -23,7 +23,7 @@ def info() -> typing.Dict:
     return {
         "apiversion": "1",
         "author": "RAVE",
-        "color": "#ffc700",
+        "color": "#00fff2",
         "head": "pixel-round",
         "tail": "pixel-round",
     }
@@ -33,6 +33,9 @@ def start(game_state: typing.Dict):
 
 def end(game_state: typing.Dict):
     print("GAME OVER\n")
+    snakeLength = game_state["you"]["length"]
+    turnsSurvived = game_state['turn']
+    print("Final score:", snakeLength  * 0.2 + turnsSurvived * 0.8)
 
 # ================= HELPERS =================
 

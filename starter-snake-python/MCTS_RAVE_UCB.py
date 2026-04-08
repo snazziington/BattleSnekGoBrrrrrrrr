@@ -6,18 +6,18 @@ import time
 # ================= CONFIG =================
 
 rolloutDepth = 20
-MCTSTimeLimit = 0.2
+MCTSTimeLimit = 0.5
 
 UCB1Exploration = 2
 raveWeight = 0.5   # MAIN CONTROL (0=UCB, 1=RAVE)
 
-lowHealthThreshold = 40
+lowHealthThreshold = 60
 foodDistancePenalty = 3
 spaceWeight = 2
 
 deadPenalty = -1000
 noMovePenalty = -200
-hazardPenalty = 20
+hazardPenalty = 200
 
 # ================= INFO =================
 
@@ -35,6 +35,9 @@ def start(game_state: typing.Dict):
 
 def end(game_state: typing.Dict):
     print("GAME OVER\n")
+    snakeLength = game_state["you"]["length"]
+    turnsSurvived = game_state['turn']
+    print("Final score:", snakeLength  * 0.2 + turnsSurvived * 0.8)
 
 # ================= HELPERS =================
 

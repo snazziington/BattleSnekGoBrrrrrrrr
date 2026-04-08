@@ -11,7 +11,7 @@ def info() -> typing.Dict:
 
     return {
        "apiversion":"1",
-       "author":"Snazziington",  # Your Battlesnake Username
+       "author":"heuristicAgent",  # Your Battlesnake Username
        "color":"#6B57E0",  # Choose color
        "head":"beluga",  # Choose head
        "tail":"do-sammy",  # Choose tail
@@ -340,7 +340,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
             print("Heeeeealth", simGameState["you"]["health"])
 
             for food in foodLocations(game_state):
-                foodDist = min(abs(nextMove["x"]-food["x"]) + abs(nextMove["y"]-f["y"]) for f in simGameState["board"]["food"])
+                foodDist = min(abs(nextMove["x"] - food["x"]) + abs(nextMove["y"] - f["y"]) for f in simGameState["board"]["food"])
                 if game_state["you"]["health"] < hungryBounds:
                     foodScore -= foodDist * foodDistancePenalty
                     totalFoodDist -= foodDist
