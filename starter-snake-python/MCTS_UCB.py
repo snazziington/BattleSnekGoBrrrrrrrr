@@ -40,7 +40,7 @@ def info() -> typing.Dict:
     
     return {
         "apiversion": "1",
-        "author": "MattXWay",
+        "author": "UCB",
         "color": "#ffc700",
         "head": "pixel-round",
         "tail": "pixel-round",

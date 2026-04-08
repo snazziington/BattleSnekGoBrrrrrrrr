@@ -22,7 +22,7 @@ hazardPenalty = 200  # increased significantly - rave seems to undervalue hazard
 def info() -> typing.Dict:
     return {
         "apiversion": "1",
-        "author": "MattXWay",
+        "author": "RAVE",
         "color": "#ffc700",
         "head": "pixel-round",
         "tail": "pixel-round",
